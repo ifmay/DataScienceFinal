@@ -1,6 +1,6 @@
 import pandas as pd
 
-def filter_major_airlines_and_destinations(input_file, output_file):
+def filter_airlines(input_file, output_file):
     """
     Filters data to include only the major 8 airlines and destinations with more than 2,500 flights,
     and saves the result to a new CSV file.
