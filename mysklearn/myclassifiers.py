@@ -1,10 +1,11 @@
 """
-Programmer: Drew Fitzpatrick
+Programmers: Drew Fitzpatrick, Izzy May
 Class: CptS 322-01, Fall 2024
-Programming Assignment #7
-11/20/2024
+Final Project
+12/10/2024
 """
 import operator
+import numpy as np
 from mysklearn import myutils
 
 class MyKNeighborsClassifier:
@@ -450,21 +451,57 @@ class MyDecisionTreeClassifier:
         # use recursion
         self.help_print_rules(self.tree, "", attribute_names, class_name)
 
-    # BONUS method
-    def visualize_tree(self, dot_fname, pdf_fname, attribute_names=None):
-        """BONUS: Visualizes a tree via the open source Graphviz graph visualization package and
-        its DOT graph language (produces .dot and .pdf files).
+
+class MyRandomForestClassifier:
+    """Represents a random forest classifier.
+
+    Attributes:
+        X_train(list of list of obj): The list of training instances (samples).
+                The shape of X_train is (n_train_samples, n_features)
+        y_train(list of obj): The target y values (parallel to X_train).
+            The shape of y_train is n_samples
+        tree(nested list): The extracted tree model.
+        header(list of str): The list of attribute names.
+        att_domains(dictionary): The attribute names (generalized) as a key
+            to the list of possible attribute values.
+
+    """
+    def __init__(self):
+        """Initializer for MyDecisionTreeClassifier.
+        """
+        self.X_train = None
+        self.y_train = None
+        self.tree = None
+        self.header = None
+        self.att_domains = None
+
+    def fit(self, X_train, y_train):
+        """Fits a decision tree classifier to X_train and y_train using the TDIDT
+        (top down induction of decision tree) algorithm.
 
         Args:
-            dot_fname(str): The name of the .dot output file.
-            pdf_fname(str): The name of the .pdf output file generated from the .dot file.
-            attribute_names(list of str or None): A list of attribute names to use in the decision rules
-                (None if a list is not provided and the default attribute names based on indexes
-                (e.g. "att0", "att1", ...) should be used).
+            X_train(list of list of obj): The list of training instances (samples).
+                The shape of X_train is (n_train_samples, n_features)
+            y_train(list of obj): The target y values (parallel to X_train)
+                The shape of y_train is n_train_samples
 
         Notes:
-            Graphviz: https://graphviz.org/
-            DOT language: https://graphviz.org/doc/info/lang.html
-            You will need to install graphviz in the Docker container as shown in class to complete this method.
+            Since TDIDT is an eager learning algorithm, this method builds a decision tree model
+                from the training data.
+            Build a decision tree using the nested list representation described in class.
+            On a majority vote tie, choose first attribute value based on attribute domain ordering.
+            Store the tree in the tree attribute.
+            Use attribute indexes to construct default attribute names (e.g. "att0", "att1", ...).
         """
-        pass # TODO: (BONUS) fix this
+
+
+    def compute_random_subset(self, values, num_values):
+        """Selects F (num_values) random attributes from an attribute list
+        
+        Args:
+            values(list of obj): The list of attribute values
+            num_values(int): """
+        values_copy = values.copy()
+        np.random.shuffle(values_copy) # inplace
+        return values_copy[:num_values]
+    
