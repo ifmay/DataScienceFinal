@@ -611,7 +611,8 @@ class MyRandomForestClassifier:
             if self.f:
                 available_atts = self.compute_random_subset(available_atts, self.f)
             
-            tree = self.tdidt(X_bootstrap + [y_bootstrap], available_atts)
+            train_data = [X_bootstrap[i] + [y_bootstrap[i]] for i in range(len(X_bootstrap))]
+            tree = self.tdidt(train_data, available_atts)
             tree_validation_pairs.append((tree, X_validation, y_validation))
 
         return tree_validation_pairs

@@ -1,9 +1,3 @@
-<<<<<<< Updated upstream
-from mysklearn.myclassifiers import MyDecisionTreeClassifier
-from mysklearn.myclassifiers import MyNaiveBayesClassifier
-from mysklearn.myclassifiers import MyRandomForestClassifier
-=======
->>>>>>> Stashed changes
 
 # pylint: skip-file
 import numpy as np
@@ -653,10 +647,7 @@ def test_decision_tree_classifier_predict():
 
     assert y_actual_iphone == y_expected_iphone
 
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
 def test_random_forest_classifier_fit():
     header_interview = ["level", "lang", "tweets", "phd", "interviewed_well"]
     X_train_interview = [
@@ -676,14 +667,6 @@ def test_random_forest_classifier_fit():
         ["Junior", "Python", "no", "yes"]
     ]
     y_train_interview = ["False", "False", "True", "True", "True", "False", "True", "False", "True", "True", "True", "True", "True", "False"]
-<<<<<<< Updated upstream
-    
-    random_forest = MyRandomForestClassifier(n=5, m=3, f=2)
-    random_forest.fit(X_train_interview, y_train_interview)
-    
-    assert len(random_forest.decision_trees) == 3
-    assert random_forest[0] != random_forest[1]
-=======
 
     # need to check that there are M trees retained and that they are different from each other
     random_forest = MyRandomForestClassifier(n=5, m=3, f=2)
@@ -693,4 +676,34 @@ def test_random_forest_classifier_fit():
     assert random_forest.trees[0] != random_forest.trees[1] 
     assert random_forest.trees[1] != random_forest.trees[2]
     assert random_forest.trees[0] != random_forest.trees[2]
->>>>>>> Stashed changes
+
+
+def test_random_forest_classifier_predict():
+    # A
+    header_interview = ["level", "lang", "tweets", "phd", "interviewed_well"]
+    X_train_interview = [
+        ["Senior", "Java", "no", "no"],
+        ["Senior", "Java", "no", "yes"],
+        ["Mid", "Python", "no", "no"],
+        ["Junior", "Python", "no", "no"],
+        ["Junior", "R", "yes", "no"],
+        ["Junior", "R", "yes", "yes"],
+        ["Mid", "R", "yes", "yes"],
+        ["Senior", "Python", "no", "no"],
+        ["Senior", "R", "yes", "no"],
+        ["Junior", "Python", "yes", "no"],
+        ["Senior", "Python", "yes", "yes"],
+        ["Mid", "Python", "no", "yes"],
+        ["Mid", "Java", "yes", "no"],
+        ["Junior", "Python", "no", "yes"]
+    ]
+    y_train_interview = ["False", "False", "True", "True", "True", "False", "True", "False", "True", "True", "True", "True", "True", "False"]
+
+    X_test = [["Junior", "Java", "yes", "no"], ["Junior", "Java", "yes", "yes"]]
+    y_expected = ["True", "False"]
+
+    decision_tree = MyRandomForestClassifier()
+    decision_tree.fit(X_train_interview, y_train_interview)
+    y_actual = decision_tree.predict(X_test)
+
+    assert y_actual == y_expected
