@@ -8,6 +8,7 @@ Description: This program implements different methods of
             evaluating a dataset as described in the PA6 requirements.
 """
 import copy
+import random
 from tabulate import tabulate
 import numpy as np # use numpy's random number generation
 from mysklearn import myutils
@@ -98,6 +99,65 @@ def kfold_split(X, n_splits=5, random_state=None, shuffle=False):
         current = stop
 
     return folds
+
+def stratified_kfold_split(X, y, n_splits=5, random_state=None, shuffle=False):
+    """Split dataset into stratified cross validation folds.
+
+    Args:
+        X(list of list of obj): The list of instances (samples).
+            The shape of X is (n_samples, n_features)
+        y(list of obj): The target y values (parallel to X).
+            The shape of y is n_samples
+        n_splits(int): Number of folds.
+        random_state(int): integer used for seeding a random number generator for reproducible results
+        shuffle(bool): whether or not to randomize the order of the instances before creating folds
+
+    Returns:
+        folds(list of 2-item tuples): The list of folds where each fold is defined as a 2-item tuple
+            The first item in the tuple is the list of training set indices for the fold
+            The second item in the tuple is the list of testing set indices for the fold
+
+    Notes:
+        Loosely based on sklearn's StratifiedKFold split():
+            https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
+    """
+    # Initialize the random seed if specified
+    if random_state is not None:
+        random.seed(random_state)
+
+    # Shuffle the data if specified
+    indices = list(range(len(X)))
+    if shuffle:
+        combined = list(zip(indices, X, y))
+        random.shuffle(combined)
+        indices, X, y = zip(*combined)
+
+    # Group indices by class to ensure stratification
+    label_indices = {}
+    for idx, label in enumerate(y):
+        if label not in label_indices:
+            label_indices[label] = []
+        label_indices[label].append(indices[idx])
+
+    # Split each label's indices into n_splits folds
+    folds = [[] for _ in range(n_splits)]
+    for label, idxs in label_indices.items():
+        fold_sizes = [len(idxs) // n_splits + (1 if i < len(idxs) % n_splits else 0) for i in range(n_splits)]
+        current = 0
+        for i, fold_size in enumerate(fold_sizes):
+            fold_indices = idxs[current:current + fold_size]
+            folds[i].extend(fold_indices)
+            current += fold_size
+
+    # Construct the training and testing sets for each fold
+    stratified_folds = []
+    for i in range(n_splits):
+        test_indices = folds[i]
+        train_indices = [idx for fold in folds[:i] + folds[i+1:] for idx in fold]
+        stratified_folds.append((train_indices, test_indices))
+
+    return stratified_folds
+
 
 def bootstrap_sample(X, y=None, n_samples=None, random_state=None):
     """Split dataset into bootstrapped training set and out of bag test set.

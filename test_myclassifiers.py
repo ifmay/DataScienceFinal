@@ -1,5 +1,6 @@
 from mysklearn.myclassifiers import MyDecisionTreeClassifier
 from mysklearn.myclassifiers import MyNaiveBayesClassifier
+from mysklearn.myclassifiers import MyRandomForestClassifier
 
 # pylint: skip-file
 import numpy as np
@@ -647,3 +648,29 @@ def test_decision_tree_classifier_predict():
     y_actual_iphone = decision_tree_iphone.predict(X_test_iphone)
 
     assert y_actual_iphone == y_expected_iphone
+
+def test_random_forest_classifier_fit():
+    header_interview = ["level", "lang", "tweets", "phd", "interviewed_well"]
+    X_train_interview = [
+        ["Senior", "Java", "no", "no"],
+        ["Senior", "Java", "no", "yes"],
+        ["Mid", "Python", "no", "no"],
+        ["Junior", "Python", "no", "no"],
+        ["Junior", "R", "yes", "no"],
+        ["Junior", "R", "yes", "yes"],
+        ["Mid", "R", "yes", "yes"],
+        ["Senior", "Python", "no", "no"],
+        ["Senior", "R", "yes", "no"],
+        ["Junior", "Python", "yes", "no"],
+        ["Senior", "Python", "yes", "yes"],
+        ["Mid", "Python", "no", "yes"],
+        ["Mid", "Java", "yes", "no"],
+        ["Junior", "Python", "no", "yes"]
+    ]
+    y_train_interview = ["False", "False", "True", "True", "True", "False", "True", "False", "True", "True", "True", "True", "True", "False"]
+    
+    random_forest = MyRandomForestClassifier(n=5, m=3, f=2)
+    random_forest.fit(X_train_interview, y_train_interview)
+    
+    assert len(random_forest.decision_trees) == 3
+    assert random_forest[0] != random_forest[1]

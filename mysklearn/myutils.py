@@ -7,7 +7,11 @@ Programming Assignment #7
 Description: Utility file for utility functions.
 """
 
-import numpy as np # use numpy's random number generation
+import numpy as np
+from tabulate import tabulate
+
+from mysklearn.myclassifiers import MyKNeighborsClassifier, MyDummyClassifier
+import mysklearn.myevaluation as myevaluation
 
 def discretize_delays(delay_time):
     """
@@ -129,3 +133,303 @@ def get_majority_class(instances):
     max_count = max(class_counts.values())
     max_classes = [class_label for class_label, count in class_counts.items() if count == max_count]
     return max_classes[0]
+
+def mpg_discretizer(mpg_value):
+    """
+    Discretize the MPG (Miles Per Gallon) value into a class based on the 
+    Department of Energy (DOE) rating scale.
+
+    The discretization is done by categorizing the MPG value into specific 
+    ranges, assigning a class label from 1 to 10.
+
+    Parameters:
+    mpg_value (float): The continuous MPG value to be discretized.
+
+    Returns:
+    int: The corresponding class label based on the DOE rating scale.
+    """
+    if mpg_value >= 45:
+        return 10
+    elif mpg_value >= 37:
+        return 9
+    elif mpg_value >= 31:
+        return 8
+    elif mpg_value >= 27:
+        return 7
+    elif mpg_value >= 24:
+        return 6
+    elif mpg_value >= 20:
+        return 5
+    elif mpg_value >= 17:
+        return 4
+    elif mpg_value >= 15:
+        return 3
+    elif mpg_value == 14:
+        return 2
+    else:
+        return 1
+
+def calculate_accuracy(predictions, actuals):
+    """
+    Calculate the accuracy of the classifier by comparing predicted classes
+    with actual classes.
+
+    The function counts the number of correct predictions where the predicted 
+    class matches the actual class and computes the accuracy as the ratio of 
+    correct predictions to the total number of predictions.
+
+    Parameters:
+    predictions (list of int): List of predicted class labels.
+    actuals (list of int): List of actual class labels.
+
+    Returns:
+    float: The accuracy of the predictions, a value between 0 and 1.
+    """
+    correct_predictions = sum(np.round(pred) == actual for pred, actual in zip(predictions, actuals))
+    return correct_predictions / len(actuals)
+
+def random_subsample(X, y, k=10, test_size=0.33, random_state=None):
+    """
+    Perform random subsampling to calculate predictive accuracy and error rate for each classifier.
+
+    The function splits the dataset k times into training and test sets, fits a k-Nearest Neighbors 
+    classifier and a Dummy classifier on each split, and calculates their accuracy and error rates.
+
+    Parameters:
+    X (array-like): Feature matrix.
+    y (array-like): Target labels.
+    k (int, optional): Number of subsamples to generate. Defaults to 10.
+    test_size (float, optional): Proportion of the dataset to include in the test split. Defaults to 0.33.
+    random_state (int, optional): Seed for the random number generator. Defaults to None.
+
+    Returns:
+    tuple: Accuracy and error rates for both classifiers.
+    """
+    knn_accuracy_sum = 0
+    dummy_accuracy_sum = 0
+
+    for _ in range(k):
+        # Split the dataset into train and test sets
+        X_train, X_test, y_train, y_test = myevaluation.train_test_split(X, y, test_size=test_size, random_state=random_state)
+
+        # K nearest neighbors classifier
+        knn = MyKNeighborsClassifier()
+        knn.fit(X_train, y_train)
+        knn_pred = knn.predict(X_test)
+        knn_accuracy_sum += myevaluation.accuracy_score(y_test, knn_pred)
+
+        # Dummy Classifier
+        dummy = MyDummyClassifier(strategy='most_frequent')
+        dummy.fit(X_train)
+        dummy_pred = dummy.predict(X_test)
+        dummy_accuracy_sum += myevaluation.accuracy_score(y_test, dummy_pred)
+
+    # Average error rate over k splits
+    knn_error_rate = knn_accuracy_sum / k
+    dummy_error_rate = dummy_accuracy_sum / k
+
+    # Calculate accuracy rates
+    knn_accuracy = 1 - knn_error_rate
+    dummy_accuracy = 1 - dummy_error_rate
+
+    # Print results
+    print("===========================================")
+    print("Random Subsample (k={k}, 2:1 Train/Test)")
+    print(f"k Nearest Neighbors Classifier: accuracy = {knn_accuracy:.2f}, error rate = {knn_error_rate:.2f}")
+    print(f"Dummy Classifier: accuracy = {dummy_accuracy:.2f}, error rate = {dummy_error_rate:.2f}")
+    return knn_accuracy, knn_error_rate, dummy_accuracy, dummy_error_rate
+
+def cross_val_predict(X, y, k=10, stratified=False, random_state=None):
+    """
+    Compute predictive accuracy and error rate using k-fold cross-validation.
+
+    This function uses k-fold cross-validation to evaluate the k-Nearest Neighbors 
+    and Dummy classifiers, calculating their average accuracy and error rates over all folds.
+
+    Parameters:
+    X (array-like): Feature matrix.
+    y (array-like): Target labels.
+    k (int, optional): Number of folds. Defaults to 10.
+    stratified (bool, optional): Whether to use stratified sampling. Defaults to False.
+    random_state (int, optional): Seed for the random number generator. Defaults to None.
+
+    Returns:
+    tuple: Accuracy and error rates for both classifiers.
+    """
+    knn_accuracy_sum = 0
+    dummy_accuracy_sum = 0
+
+    # Select k-fold split method
+    if stratified:
+        folds = myevaluation.stratified_kfold_split(X, y, n_splits=k, random_state=random_state, shuffle=True)
+    else:
+        folds = myevaluation.kfold_split(X, n_splits=k, random_state=random_state, shuffle=True)
+
+    # Loop through each fold
+    for train_indices, test_indices in folds:
+        X_train, X_test = X[train_indices], X[test_indices]
+        y_train, y_test = y[train_indices], y[test_indices]
+
+        # K Nearest neighbors classifier
+        knn = MyKNeighborsClassifier()
+        knn.fit(X_train, y_train)
+        knn_pred = knn.predict(X_test)
+        knn_accuracy_sum += myevaluation.accuracy_score(y_test, knn_pred)
+
+        # Dummy classifier
+        dummy = MyDummyClassifier(strategy='most_frequent')
+        dummy.fit(X_train)
+        dummy_pred = dummy.predict(X_test)
+        dummy_accuracy_sum += myevaluation.accuracy_score(y_test, dummy_pred)
+
+     # Average error rate over k splits
+    knn_error_rate = knn_accuracy_sum / k
+    dummy_error_rate = dummy_accuracy_sum / k
+
+    # Calculate accuracy rates
+    knn_accuracy = 1 - knn_error_rate
+    dummy_accuracy = 1 - dummy_error_rate
+
+    # Print results
+    print("\n===========================================")
+    print("Stratified 10-Fold Cross Validation")
+    print("===========================================")
+    print(f"k Nearest Neighbors Classifier: accuracy = {knn_accuracy:.2f}, error rate = {knn_error_rate:.2f}")
+    print(f"Dummy Classifier: accuracy = {dummy_accuracy:.2f}, error rate = {dummy_error_rate:.2f}")
+    return knn_accuracy, knn_error_rate, dummy_accuracy, dummy_error_rate
+
+
+
+def bootstrap_method(X, y, k=10, random_state=None):
+    """
+    Compute predictive accuracy and error rate for each classifier using the bootstrap method.
+
+    The function performs k bootstrap samples, where each sample is used to train the classifiers 
+    and the out-of-bag samples are used to evaluate accuracy and error rates.
+
+    Parameters:
+    X (array-like): Feature matrix.
+    y (array-like): Target labels.
+    k (int, optional): Number of bootstrap samples. Defaults to 10.
+    random_state (int, optional): Seed for the random number generator. Defaults to None.
+
+    Returns:
+    tuple: Accuracy and error rates for both classifiers.
+    """
+    knn_accuracy_sum = 0
+    dummy_accuracy_sum = 0
+
+    for _ in range(k):
+        # Generate bootstrap sample
+        X_sample, X_test, y_sample, y_test = myevaluation.bootstrap_sample(X, y, random_state=random_state)
+
+        # K nearest neighbors classifier
+        knn = MyKNeighborsClassifier()
+        knn.fit(X_sample, y_sample)
+        knn_pred = knn.predict(X_test)
+        knn_accuracy_sum += myevaluation.accuracy_score(y_test, knn_pred)
+
+        # Dummy classifier
+        dummy = MyDummyClassifier(strategy='most_frequent')
+        dummy.fit(X_sample)
+        dummy_pred = dummy.predict(X_test)
+        dummy_accuracy_sum += myevaluation.accuracy_score(y_test, dummy_pred)
+
+
+    # Average error rate over k bootstrap samples
+    knn_error_rate = knn_accuracy_sum / k if k > 0 else 0
+    dummy_error_rate = dummy_accuracy_sum / k if k > 0 else 0
+
+    # Calculate accuracy rates
+    knn_accuracy = 1 - knn_error_rate
+    dummy_accuracy = 1 - dummy_error_rate
+
+    # Print results in the specified format
+    print("===========================================")
+    print("STEP 3: Predictive Accuracy")
+    print("===========================================")
+    print(f"k={k} Bootstrap Method")
+    print(f"k Nearest Neighbors Classifier: accuracy = {knn_accuracy:.2f}, error rate = {knn_error_rate:.2f}")
+    print(f"Dummy Classifier: accuracy = {dummy_accuracy:.2f}, error rate = {dummy_error_rate:.2f}")
+
+    return knn_accuracy, knn_error_rate, dummy_accuracy, dummy_error_rate
+
+def random_subsample_with_predictions(X, y, k=10, test_size=0.33, random_state=None):
+    """
+    Perform random subsampling to calculate predictive accuracy, error rate, and predictions for each classifier.
+
+    This function splits the dataset k times, fits the classifiers on each split, and stores 
+    predictions for future use along with accuracy and error rates.
+
+    Parameters:
+    X (array-like): Feature matrix.
+    y (array-like): Target labels.
+    k (int, optional): Number of subsamples to generate. Defaults to 10.
+    test_size (float, optional): Proportion of the dataset to include in the test split. Defaults to 0.33.
+    random_state (int, optional): Seed for the random number generator. Defaults to None.
+
+    Returns:
+    tuple: knn_predictions, knn_accuracy, knn_error_rate, dummy_accuracy, dummy_error_rate
+    """
+
+    knn_accuracy_sum = 0
+    dummy_accuracy_sum = 0
+    knn_predictions = []
+
+    for _ in range(k):
+        # Split the dataset into train and test sets
+        X_train, X_test, y_train, y_test = myevaluation.train_test_split(X, y, test_size=test_size, random_state=random_state)
+
+        # k Nearest Neighbors Classifier
+        knn = MyKNeighborsClassifier()
+        knn.fit(X_train, y_train)
+        knn_pred = knn.predict(X_test)
+        knn_predictions.extend(knn_pred)
+        knn_accuracy_sum += myevaluation.accuracy_score(y_test, knn_pred)
+
+        # Dummy Classifier
+        dummy = MyDummyClassifier(strategy='most_frequent')
+        dummy.fit(X_train)
+        dummy_pred = dummy.predict(X_test)
+        dummy_accuracy_sum += myevaluation.accuracy_score(y_test, dummy_pred)
+
+    # Average accuracy and error rate over k splits
+    knn_error_rate = knn_accuracy_sum / k
+    dummy_error_rate = dummy_accuracy_sum / k
+
+    # Calculate accuracy rates
+    knn_accuracy = 1 - knn_error_rate
+    dummy_accuracy = 1 - dummy_error_rate
+
+    return knn_predictions, knn_accuracy, knn_error_rate, dummy_accuracy, dummy_error_rate
+
+
+def calculate_confusion_matrix_totals(matrix):
+    """Calculate totals and recognition percentages for each row in the confusion matrix.
+
+    Args:
+        matrix (list of list of int): The confusion matrix as a list of lists.
+
+    Returns:
+        list of list of int/float: The confusion matrix with added total and recognition % columns.
+    """
+    new_matrix = []
+    for i, row in enumerate(matrix):
+        total = sum(row)
+        recognition = (row[i] / total * 100) if total > 0 else 0  # row[i] is the diagonal element (True Positives)
+        new_matrix.append(row + [total, recognition])
+    return new_matrix
+
+def display_confusion_matrix(matrix, labels):
+    """Display the formatted confusion matrix with MPG rating, 1-10, Total, and recognition %.
+
+    Args:
+        matrix (list of list of int): The confusion matrix with totals and recognition %.
+        labels (list of str): The list of MPG ratings as column headers.
+
+    Returns:
+        None
+    """
+    headers = ["Survived"] + labels + ["Total", "Recognition %"]
+    table = [[label] + row for label, row in zip(labels, matrix)]
+    print(tabulate(table, headers, floatfmt=".2f"))
