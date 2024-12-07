@@ -7,6 +7,7 @@ Final Project
 import operator
 import numpy as np
 from mysklearn import myutils
+from collections import Counter
 
 class MyKNeighborsClassifier:
     """Represents a simple k nearest neighbors classifier.
@@ -719,3 +720,86 @@ class MyRandomForestClassifier:
             y_predicted.append(majority_vote)
 
         return y_predicted
+    
+class DecisionTreeRandomForest:
+    def __init__(self, max_depth=None):
+        self.max_depth = max_depth
+        self.tree = None
+
+    def fit(self, X, y):
+        self.tree = self._build_tree(X, y)
+
+    def predict(self, X):
+        return [self._predict_single(self.tree, x) for x in X]
+
+    def _gini(self, y):
+        m = len(y)
+        if m == 0:
+            return 0
+        counts = Counter(y)
+        return 1 - sum((count / m) ** 2 for count in counts.values())
+
+    def _split(self, X, y, feature, threshold):
+        left_indices = [i for i, x in enumerate(X[:, feature]) if x < threshold]
+        right_indices = [i for i, x in enumerate(X[:, feature]) if x >= threshold]
+        return left_indices, right_indices
+
+    def _information_gain(self, y, left_indices, right_indices):
+        m = len(y)
+        left_y, right_y = y[left_indices], y[right_indices]
+        return self._gini(y) - (len(left_y) / m * self._gini(left_y) + len(right_y) / m * self._gini(right_y))
+
+    def _best_split(self, X, y):
+        best_feature, best_threshold, best_gain = None, None, 0
+        for feature in range(X.shape[1]):
+            thresholds = np.unique(X[:, feature])
+            for threshold in thresholds:
+                left_indices, right_indices = self._split(X, y, feature, threshold)
+                gain = self._information_gain(y, left_indices, right_indices)
+                if gain > best_gain:
+                    best_feature, best_threshold, best_gain = feature, threshold, gain
+        return best_feature, best_threshold
+
+    def _build_tree(self, X, y, depth=0):
+        if len(set(y)) == 1 or depth == self.max_depth:
+            return Counter(y).most_common(1)[0][0]
+
+        feature, threshold = self._best_split(X, y)
+        if feature is None:
+            return Counter(y).most_common(1)[0][0]
+
+        left_indices, right_indices = self._split(X, y, feature, threshold)
+        left_subtree = self._build_tree(X[left_indices], y[left_indices], depth + 1)
+        right_subtree = self._build_tree(X[right_indices], y[right_indices], depth + 1)
+        return (feature, threshold, left_subtree, right_subtree)
+
+    def _predict_single(self, node, x):
+        if not isinstance(node, tuple):
+            return node
+        feature, threshold, left_subtree, right_subtree = node
+        if x[feature] < threshold:
+            return self._predict_single(left_subtree, x)
+        else:
+            return self._predict_single(right_subtree, x)
+
+class RandomForest:
+    def __init__(self, n_estimators=10, max_depth=None, max_features=None):
+        self.n_estimators = n_estimators
+        self.max_depth = max_depth
+        self.max_features = max_features
+        self.trees = []
+
+    def fit(self, X, y):
+        self.trees = []
+        n_samples = X.shape[0]
+        for _ in range(self.n_estimators):
+            bootstrap_indices = np.random.choice(n_samples, n_samples, replace=True)
+            bootstrap_X, bootstrap_y = X[bootstrap_indices], y[bootstrap_indices]
+
+            tree = DecisionTreeRandomForest(max_depth=self.max_depth)
+            tree.fit(bootstrap_X, bootstrap_y)
+            self.trees.append(tree)
+
+    def predict(self, X):
+        tree_preds = np.array([tree.predict(X) for tree in self.trees])
+        return [Counter(tree_preds[:, i]).most_common(1)[0][0] for i in range(X.shape[0])]

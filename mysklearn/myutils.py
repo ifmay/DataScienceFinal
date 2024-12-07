@@ -433,3 +433,46 @@ def display_confusion_matrix(matrix, labels):
     headers = ["Survived"] + labels + ["Total", "Recognition %"]
     table = [[label] + row for label, row in zip(labels, matrix)]
     print(tabulate(table, headers, floatfmt=".2f"))
+    
+
+def select_top_elements(trees, accuracies, m_classifiers):
+    """Selects the indices of the top `m_classifiers` trees based on their accuracies.
+
+    Args:
+        trees (list): A list of decision trees.
+        accuracies (list): A list of accuracies corresponding to each tree.
+        m_classifiers (int): The number of top classifiers (trees) to select.
+
+    Returns:
+        list: A list of indices of the top `m_classifiers` trees based on their accuracies.
+    """
+    # Ensure the accuracies and trees have the same length
+    assert len(trees) == len(accuracies), "The number of trees must match the number of accuracies."
+    
+    # Sort the indices based on accuracies in descending order, then select the top `m_classifiers`
+    top_indices = sorted(range(len(accuracies)), key=lambda i: accuracies[i], reverse=True)[:m_classifiers]
+    
+    return top_indices
+
+from collections import Counter
+
+def get_most_frequent(values):
+    """Returns the most frequent value in a list.
+
+    Args:
+        values (list): A list of values (e.g., class labels or any other items).
+
+    Returns:
+        The most frequent value in the list. If there is a tie, the smallest value is returned.
+    """
+    # Count the occurrences of each value in the list
+    counts = Counter(values)
+    
+    # Find the maximum count
+    max_count = max(counts.values())
+    
+    # Get the list of values that have the maximum count (in case of ties)
+    most_frequent = [key for key, count in counts.items() if count == max_count]
+    
+    # Return the smallest value in case of a tie
+    return min(most_frequent)

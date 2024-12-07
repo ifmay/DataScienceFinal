@@ -523,3 +523,57 @@ def gen_precision_recall_f1(y_trues, y_preds, labels=None, pos_label=None):
     f1 = 2 * (avg_precision * avg_recall) / (avg_precision + avg_recall)
 
     return avg_precision, avg_recall, f1
+
+
+# Custom implementations for metrics
+def binary_precision_score_rf(y_true, y_pred, labels=None, pos_label=None):
+    if labels is None:
+        labels = list(set(y_true))
+    if pos_label is None:
+        pos_label = labels[0]
+
+    # Pass `labels` as a keyword argument
+    matrix = confusion_matrix(y_true, y_pred, labels=labels)
+    indexed_labels = {label: index for index, label in enumerate(labels)}
+    pos_index = indexed_labels[pos_label]
+
+    tp = matrix[pos_index][pos_index]
+    fp = sum(matrix[i][pos_index] for i in range(len(labels)) if i != pos_index)
+
+    if tp + fp == 0:
+        return 0.0
+    precision = tp / (tp + fp)
+    return precision
+
+def binary_recall_score_rf(y_true, y_pred, labels=None, pos_label=None):
+    if labels is None:
+        labels = list(set(y_true))
+    if pos_label is None:
+        pos_label = labels[0]
+
+    # Pass `labels` as a keyword argument
+    matrix = confusion_matrix(y_true, y_pred, labels=labels)
+    indexed_labels = {label: index for index, label in enumerate(labels)}
+    pos_index = indexed_labels[pos_label]
+
+    tp = matrix[pos_index][pos_index]
+    fn = sum(matrix[pos_index][i] for i in range(len(labels)) if i != pos_index)
+
+    if tp + fn == 0:
+        return 0.0
+    recall = tp / (tp + fn)
+    return recall
+
+def binary_f1_scorerf(y_true, y_pred, labels=None, pos_label=None):
+    if labels is None:
+        labels = list(set(y_true))
+    if pos_label is None:
+        pos_label = labels[0]
+
+    precision = binary_precision_score_rf(y_true, y_pred, labels=labels, pos_label=pos_label)
+    recall = binary_recall_score_rf(y_true, y_pred, labels=labels, pos_label=pos_label)
+
+    if precision + recall == 0:
+        return 0.0
+    f1 = 2 * (precision * recall) / (precision + recall)
+    return f1
