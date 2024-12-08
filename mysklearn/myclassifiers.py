@@ -454,17 +454,56 @@ class MyDecisionTreeClassifier:
 
 
 class MyDecisionTreeRandomForestClassifier:
+    """
+    A simplified decision tree classifier for use in a Random Forest.
+
+    Attributes:
+        max_depth (int or None): Maximum depth of the tree (default: None, unlimited depth).
+        tree (tuple or None): The structure of the trained decision tree.
+    """
+
     def __init__(self, max_depth=None):
+        """
+        Initializes the decision tree classifier with the specified maximum depth.
+
+        Args:
+            max_depth (int or None): The maximum depth of the tree (default: None).
+        """
         self.max_depth = max_depth
-        self.tree = None
+        self.tree = None  # Placeholder for the trained decision tree
 
     def fit(self, X, y):
+        """
+        Fits the decision tree to the training data.
+
+        Args:
+            X (numpy.ndarray): Feature matrix of shape (n_samples, n_features).
+            y (numpy.ndarray): Target array of shape (n_samples,).
+        """
         self.tree = self._build_tree(X, y)
 
     def predict(self, X):
+        """
+        Predicts the class labels for the given input data.
+
+        Args:
+            X (numpy.ndarray): Feature matrix of shape (n_samples, n_features).
+
+        Returns:
+            list: Predicted class labels for each sample in X.
+        """
         return [self._predict_single(self.tree, x) for x in X]
 
     def _gini(self, y):
+        """
+        Computes the Gini impurity for a set of labels.
+
+        Args:
+            y (numpy.ndarray): Target array.
+
+        Returns:
+            float: Gini impurity score.
+        """
         m = len(y)
         if m == 0:
             return 0
@@ -472,16 +511,49 @@ class MyDecisionTreeRandomForestClassifier:
         return 1 - sum((count / m) ** 2 for count in counts.values())
 
     def _split(self, X, y, feature, threshold):
+        """
+        Splits the dataset based on a feature and a threshold.
+
+        Args:
+            X (numpy.ndarray): Feature matrix.
+            y (numpy.ndarray): Target array.
+            feature (int): Index of the feature to split on.
+            threshold (float): Threshold value for the split.
+
+        Returns:
+            tuple: Indices for the left and right splits.
+        """
         left_indices = [i for i, x in enumerate(X[:, feature]) if x < threshold]
         right_indices = [i for i, x in enumerate(X[:, feature]) if x >= threshold]
         return left_indices, right_indices
 
     def _information_gain(self, y, left_indices, right_indices):
+        """
+        Calculates the information gain from a split.
+
+        Args:
+            y (numpy.ndarray): Target array.
+            left_indices (list): Indices of the left split.
+            right_indices (list): Indices of the right split.
+
+        Returns:
+            float: Information gain.
+        """
         m = len(y)
         left_y, right_y = y[left_indices], y[right_indices]
         return self._gini(y) - (len(left_y) / m * self._gini(left_y) + len(right_y) / m * self._gini(right_y))
 
     def _best_split(self, X, y):
+        """
+        Finds the best feature and threshold to split the data.
+
+        Args:
+            X (numpy.ndarray): Feature matrix.
+            y (numpy.ndarray): Target array.
+
+        Returns:
+            tuple: Best feature index, best threshold value, and the best information gain.
+        """
         best_feature, best_threshold, best_gain = None, None, 0
         for feature in range(X.shape[1]):
             thresholds = np.unique(X[:, feature])
@@ -493,26 +565,51 @@ class MyDecisionTreeRandomForestClassifier:
         return best_feature, best_threshold
 
     def _build_tree(self, X, y, depth=0):
+        """
+        Recursively builds the decision tree.
+
+        Args:
+            X (numpy.ndarray): Feature matrix.
+            y (numpy.ndarray): Target array.
+            depth (int): Current depth of the tree.
+
+        Returns:
+            tuple or int: The tree structure or a leaf value.
+        """
+        # Stop if all labels are the same or maximum depth is reached
         if len(set(y)) == 1 or depth == self.max_depth:
             return Counter(y).most_common(1)[0][0]
 
+        # Find the best split
         feature, threshold = self._best_split(X, y)
         if feature is None:
             return Counter(y).most_common(1)[0][0]
 
+        # Recursively build left and right subtrees
         left_indices, right_indices = self._split(X, y, feature, threshold)
         left_subtree = self._build_tree(X[left_indices], y[left_indices], depth + 1)
         right_subtree = self._build_tree(X[right_indices], y[right_indices], depth + 1)
         return (feature, threshold, left_subtree, right_subtree)
 
     def _predict_single(self, node, x):
-        if not isinstance(node, tuple):
+        """
+        Predicts the class label for a single sample by traversing the tree.
+
+        Args:
+            node (tuple or int): Current node in the tree.
+            x (numpy.ndarray): Single sample feature vector.
+
+        Returns:
+            int: Predicted class label.
+        """
+        if not isinstance(node, tuple):  # Leaf node
             return node
         feature, threshold, left_subtree, right_subtree = node
         if x[feature] < threshold:
             return self._predict_single(left_subtree, x)
         else:
             return self._predict_single(right_subtree, x)
+
 
 class MyRandomForestClassifier:
     """
