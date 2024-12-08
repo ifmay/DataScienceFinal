@@ -9,6 +9,9 @@ Description: Utility file for utility functions.
 
 import numpy as np
 from tabulate import tabulate
+import pandas as pd
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+import matplotlib.pyplot as plt
 
 from mysklearn.myclassifiers import MyKNeighborsClassifier, MyDummyClassifier
 import mysklearn.myevaluation as myevaluation
@@ -476,3 +479,244 @@ def get_most_frequent(values):
     
     # Return the smallest value in case of a tie
     return min(most_frequent)
+
+def analyze_flight_data(file_path):
+    """
+    This function loads flight data, processes it, and computes the correlation matrix 
+    for various flight-related features.
+    
+    Parameters:
+        file_path (str): Path to the CSV file containing the flight data.
+        
+    Returns:
+        pd.DataFrame: The correlation matrix of the features.
+    """
+    # Load data
+    data = pd.read_csv(file_path)
+
+    # Compute flight delay (in minutes, assuming sched_dep_time and dep_time are timestamps or integers)
+    data['flight_delay'] = data['sched_dep_time'] - data['dep_time']
+
+    # Define delay categories for classification
+    def categorize_delay(delay):
+        if delay <= 0:
+            return 0
+        elif 0 < delay <= 30:
+            return 1
+        elif 30 < delay <= 60:
+            return 2
+        elif 60 < delay <= 120:
+            return 3
+        elif 120 < delay <= 180:
+            return 4
+        else:
+            return 5
+    
+    # Map delays to categories
+    data['delay_category'] = data['arr_delay'].apply(categorize_delay)
+
+    # Convert categorical features to integers (label encoding)
+    categorical_cols = ['carrier', 'flight', 'tailnum', 'origin', 'dest']
+    label_encoders = {}
+
+    for col in categorical_cols:
+        le = LabelEncoder()
+        data[col] = le.fit_transform(data[col].astype(str))
+        label_encoders[col] = le  # Store the encoder for later use if needed
+
+    # Prepare features (X) and labels (y)
+    X = data[['dep_time', 'sched_dep_time', 'dep_delay', 'arr_time', 'sched_arr_time', 'arr_delay',
+              'air_time', 'distance', 'month', 'hour']].fillna(0)
+
+    # Scale the features
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    # Calculate the correlation matrix
+    correlation_matrix = pd.DataFrame(X_scaled, columns=X.columns).corr()
+
+    return correlation_matrix
+
+def visualize_flight_delays(file_path):
+    """
+    Visualizes flight delays by categorizing them into specified time intervals.
+    
+    Parameters:
+        file_path (str): The path to the flights.csv file.
+    """
+    # Load the CSV file into a Pandas DataFrame
+    flights = pd.read_csv(file_path)
+    
+    # Ensure the 'dep_delay' column is numeric
+    flights['dep_delay'] = pd.to_numeric(flights['dep_delay'], errors='coerce')
+    
+    # Remove rows with missing 'dep_delay' values
+    flights = flights.dropna(subset=['dep_delay'])
+    
+    # Categorize delays
+    delay_intervals = {
+        "On Time": flights['dep_delay'] <= 0,
+        "0-30 mins": (flights['dep_delay'] > 0) & (flights['dep_delay'] <= 30),
+        "30 mins - 1 hour": (flights['dep_delay'] > 30) & (flights['dep_delay'] <= 60),
+        "1-2 hours": (flights['dep_delay'] > 60) & (flights['dep_delay'] <= 120),
+        "2-3 hours": (flights['dep_delay'] > 120) & (flights['dep_delay'] <= 180),
+        "3-4 hours": (flights['dep_delay'] > 180) & (flights['dep_delay'] <= 240),
+        "Over 4 hours": flights['dep_delay'] > 240
+    }
+    
+    # Count occurrences in each category
+    counts = {category: flights[condition].shape[0] for category, condition in delay_intervals.items()}
+    
+    # Create a bar chart
+    categories = list(counts.keys())
+    values = list(counts.values())
+    
+    plt.figure(figsize=(10, 6))
+    plt.bar(categories, values, color='skyblue', edgecolor='black')
+    plt.title("Flight Delay Categories", fontsize=16)
+    plt.xlabel("Delay Category", fontsize=14)
+    plt.ylabel("Number of Flights", fontsize=14)
+    plt.xticks(rotation=45, ha='right')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
+
+def visualize_delays_by_airline(file_path):
+    """
+    Visualizes average flight delays by airline, considering only delayed flights.
+    
+    Parameters:
+        file_path (str): The path to the flights.csv file.
+    """
+    # Load the CSV file into a Pandas DataFrame
+    flights = pd.read_csv(file_path)
+    
+    # Ensure 'dep_delay' is numeric and 'carrier' exists
+    flights['dep_delay'] = pd.to_numeric(flights['dep_delay'], errors='coerce')
+    flights = flights.dropna(subset=['dep_delay', 'carrier'])
+    
+    # Filter only delayed flights
+    delayed_flights = flights[flights['dep_delay'] > 0]
+    
+    # Group by 'carrier' and calculate the average delay
+    delay_by_airline = delayed_flights.groupby('carrier')['dep_delay'].mean().sort_values()
+    
+    # Plot the data
+    plt.figure(figsize=(12, 6))
+    delay_by_airline.plot(kind='bar', color='skyblue', edgecolor='black')
+    plt.title("Average Flight Delay by Airline (Delayed Flights Only)", fontsize=16)
+    plt.xlabel("Airline", fontsize=14)
+    plt.ylabel("Average Delay (minutes)", fontsize=14)
+    plt.xticks(rotation=45, fontsize=12)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
+
+def on_time_vs_delayed_by_airline(file_path):
+    """
+    Visualizes the number of on-time vs. delayed flights for each airline.
+    
+    Parameters:
+        file_path (str): The path to the flights.csv file.
+    """
+    # Load the CSV file into a Pandas DataFrame
+    flights = pd.read_csv(file_path)
+    
+    # Ensure 'dep_delay' is numeric and 'carrier' exists
+    flights['dep_delay'] = pd.to_numeric(flights['dep_delay'], errors='coerce')
+    flights = flights.dropna(subset=['dep_delay', 'carrier'])
+    
+    # Categorize flights as "on-time" or "delayed"
+    flights['status'] = flights['dep_delay'].apply(lambda x: 'Delayed' if x > 0 else 'On-time')
+    
+    # Group by airline and status
+    status_by_airline = flights.groupby(['carrier', 'status']).size().unstack(fill_value=0)
+    
+    # Plot the data
+    status_by_airline.plot(kind='bar', figsize=(12, 6), edgecolor='black', width=0.8)
+    plt.title("On-Time vs. Delayed Flights by Airline", fontsize=16)
+    plt.xlabel("Airline", fontsize=14)
+    plt.ylabel("Number of Flights", fontsize=14)
+    plt.xticks(rotation=45, fontsize=12)
+    plt.legend(title="Status", fontsize=12)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
+
+def visualize_flight_delays_balanced(file_path):
+    """
+    Visualizes flight delays by categorizing them into specified time intervals.
+    
+    Parameters:
+        file_path (str): The path to the flights.csv file.
+    """
+    # Load the CSV file into a Pandas DataFrame
+    flights = pd.read_csv(file_path)
+    
+    # Ensure the 'dep_delay' column is numeric
+    flights['dep_delay'] = pd.to_numeric(flights['dep_delay'], errors='coerce')
+    
+    # Remove rows with missing 'dep_delay' values
+    flights = flights.dropna(subset=['dep_delay'])
+    
+    # Categorize delays
+    delay_intervals = {
+        "On Time": flights['dep_delay'] <= 0,
+        "0-30 mins": (flights['dep_delay'] > 0) & (flights['dep_delay'] <= 30),
+        "30 mins - 1 hour": (flights['dep_delay'] > 30) & (flights['dep_delay'] <= 60),
+        "1-2 hours": (flights['dep_delay'] > 60) & (flights['dep_delay'] <= 120),
+        "2-3 hours": (flights['dep_delay'] > 120) & (flights['dep_delay'] <= 180),
+        "Over 3 hours": flights['dep_delay'] > 180
+    }
+    
+    # Count occurrences in each category
+    counts = {category: flights[condition].shape[0] for category, condition in delay_intervals.items()}
+    
+    # Create a bar chart
+    categories = list(counts.keys())
+    values = list(counts.values())
+    
+    plt.figure(figsize=(10, 6))
+    plt.bar(categories, values, color='skyblue', edgecolor='black')
+    plt.title("Flight Delay Categories", fontsize=16)
+    plt.xlabel("Delay Category", fontsize=14)
+    plt.ylabel("Number of Flights", fontsize=14)
+    plt.xticks(rotation=45, ha='right')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
+
+def visualize_delays_by_time_of_day(file_path):
+    """
+    Visualizes flight delays by time of day, considering only delayed flights.
+    
+    Parameters:
+        file_path (str): The path to the flights.csv file.
+    """
+    # Load the CSV file into a Pandas DataFrame
+    flights = pd.read_csv(file_path)
+    
+    # Ensure 'dep_delay' is numeric and 'sched_dep_time' exists
+    flights['dep_delay'] = pd.to_numeric(flights['dep_delay'], errors='coerce')
+    flights = flights.dropna(subset=['dep_delay', 'sched_dep_time'])
+    
+    # Filter only delayed flights
+    delayed_flights = flights[flights['dep_delay'] > 0]
+    
+    # Extract the hour from 'sched_dep_time'
+    delayed_flights['sched_hour'] = (delayed_flights['sched_dep_time'] // 100).astype(int)
+    
+    # Group by 'sched_hour' and calculate the average delay
+    delay_by_hour = delayed_flights.groupby('sched_hour')['dep_delay'].mean()
+    
+    # Plot the data
+    plt.figure(figsize=(10, 6))
+    plt.plot(delay_by_hour.index, delay_by_hour.values, marker='o', linestyle='-', color='orange', label='Average Delay')
+    plt.title("Average Flight Delay by Time of Day (Delayed Flights Only)", fontsize=16)
+    plt.xlabel("Scheduled Departure Hour (24-hour format)", fontsize=14)
+    plt.ylabel("Average Delay (minutes)", fontsize=14)
+    plt.xticks(range(0, 24))
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
