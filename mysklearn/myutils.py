@@ -219,8 +219,8 @@ def random_subsample(X, y, k=10, test_size=0.33, random_state=None):
         knn_accuracy_sum += myevaluation.accuracy_score(y_test, knn_pred)
 
         # Dummy Classifier
-        dummy = MyDummyClassifier(strategy='most_frequent')
-        dummy.fit(X_train)
+        dummy = MyDummyClassifier()
+        dummy.fit(X_train, y_train)
         dummy_pred = dummy.predict(X_test)
         dummy_accuracy_sum += myevaluation.accuracy_score(y_test, dummy_pred)
 
@@ -277,8 +277,8 @@ def cross_val_predict(X, y, k=10, stratified=False, random_state=None):
         knn_accuracy_sum += myevaluation.accuracy_score(y_test, knn_pred)
 
         # Dummy classifier
-        dummy = MyDummyClassifier(strategy='most_frequent')
-        dummy.fit(X_train)
+        dummy = MyDummyClassifier()
+        dummy.fit(X_train, y_train)
         dummy_pred = dummy.predict(X_test)
         dummy_accuracy_sum += myevaluation.accuracy_score(y_test, dummy_pred)
 
@@ -330,8 +330,8 @@ def bootstrap_method(X, y, k=10, random_state=None):
         knn_accuracy_sum += myevaluation.accuracy_score(y_test, knn_pred)
 
         # Dummy classifier
-        dummy = MyDummyClassifier(strategy='most_frequent')
-        dummy.fit(X_sample)
+        dummy = MyDummyClassifier()
+        dummy.fit(X_sample, y_sample)
         dummy_pred = dummy.predict(X_test)
         dummy_accuracy_sum += myevaluation.accuracy_score(y_test, dummy_pred)
 
@@ -388,8 +388,8 @@ def random_subsample_with_predictions(X, y, k=10, test_size=0.33, random_state=N
         knn_accuracy_sum += myevaluation.accuracy_score(y_test, knn_pred)
 
         # Dummy Classifier
-        dummy = MyDummyClassifier(strategy='most_frequent')
-        dummy.fit(X_train)
+        dummy = MyDummyClassifier()
+        dummy.fit(X_train, y_train)
         dummy_pred = dummy.predict(X_test)
         dummy_accuracy_sum += myevaluation.accuracy_score(y_test, dummy_pred)
 
@@ -430,7 +430,7 @@ def display_confusion_matrix(matrix, labels):
     Returns:
         None
     """
-    headers = ["Survived"] + labels + ["Total", "Recognition %"]
+    headers = ["Delayed"] + labels + ["Total", "Recognition %"]
     table = [[label] + row for label, row in zip(labels, matrix)]
     print(tabulate(table, headers, floatfmt=".2f"))
     
