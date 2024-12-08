@@ -686,6 +686,9 @@ def visualize_flight_delays_balanced(file_path):
     plt.tight_layout()
     plt.show()
 
+import pandas as pd
+import matplotlib.pyplot as plt
+
 def visualize_delays_by_time_of_day(file_path):
     """
     Visualizes flight delays by time of day, considering only delayed flights.
