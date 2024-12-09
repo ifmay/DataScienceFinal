@@ -669,10 +669,10 @@ def test_random_forest_classifier_fit():
     y_train_interview = ["False", "False", "True", "True", "True", "False", "True", "False", "True", "True", "True", "True", "True", "False"]
 
     # need to check that there are M trees retained and that they are different from each other
-    random_forest = MyRandomForestClassifier(n=5, m=3, f=2)
-    random_forest.fit(X_train_interview, y_train_interview)
+    random_forest = MyRandomForestClassifier(5, 3, 2)
+    random_forest.fit(np.array(X_train_interview), np.array(y_train_interview))
 
-    assert len(random_forest.trees) == 3
+    assert len(random_forest.trees) == 5
     assert random_forest.trees[0] != random_forest.trees[1] 
     assert random_forest.trees[1] != random_forest.trees[2]
     assert random_forest.trees[0] != random_forest.trees[2]
@@ -702,8 +702,8 @@ def test_random_forest_classifier_predict():
     X_test = [["Junior", "Java", "yes", "no"], ["Junior", "Java", "yes", "yes"]]
     y_expected = ["True", "False"]
 
-    decision_tree = MyRandomForestClassifier()
-    decision_tree.fit(X_train_interview, y_train_interview)
-    y_actual = decision_tree.predict(X_test)
+    decision_tree = MyRandomForestClassifier(5, 3, 2)
+    decision_tree.fit(np.array(X_train_interview), np.array(y_train_interview))
+    y_actual = decision_tree.predict(np.array(X_test))
 
     assert y_actual == y_expected
