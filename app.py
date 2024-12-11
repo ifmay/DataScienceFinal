@@ -55,7 +55,6 @@ def nb_predict(model, X_test):
 
     return y_predicted
 
-
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
