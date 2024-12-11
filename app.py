@@ -11,22 +11,6 @@ def load_model():
     print(model)
     return model
 
-def tdidt_predict(trees, X):
-    """
-    Predicts the class labels for the given input data using majority voting across all trees.
-
-    Args:
-        X (numpy.ndarray): Feature matrix of shape (n_samples, n_features).
-
-    Returns:
-        list: Predicted class labels for each sample in X.
-    """
-    # Collect predictions from all trees
-    tree_preds = np.array([tree.predict(X) for tree in trees])
-    
-    # Perform majority voting for each sample
-    return [Counter(tree_preds[:, i]).most_common(1)[0][0] for i in range(X.shape[0])]
-
 def nb_predict(model, X_test):
     """Makes predictions for test instances in X_test.
 
@@ -58,14 +42,13 @@ def nb_predict(model, X_test):
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        dep_time = request.form.get("dep_time")
         sched_dep_time = request.form.get("sched_dep_time")
         sched_arr_time = request.form.get("sched_arr_time")
         air_time = request.form.get("air_time")
         hour = request.form.get("hour")
        
         # Generate the prediction link with user input
-        predict_link = f"http://127.0.0.1:5001/predict?dep_time={dep_time}&sched_dep_time={sched_dep_time}&sched_arr_time={sched_arr_time}&air_time={air_time}&hour={hour}"
+        predict_link = f"http://127.0.0.1:5001/predict?sched_dep_time={sched_dep_time}&sched_arr_time={sched_arr_time}&air_time={air_time}&hour={hour}"
 
         return f"""
         <h1>Welcome to the delay predictor app!</h1>
@@ -76,8 +59,6 @@ def index():
     return """
     <h1>Welcome to the delay predictor app!</h1>
     <form method="POST">
-        <label for="dep_time">Departure Time:</label>
-        <input type="text" id="dep_time" name="dep_time" required><br><br>
 
         <label for="sched_dep_time">Scheduled Departure Time:</label>
         <input type="text" id="sched_dep_time" name="sched_dep_time" required><br><br>
@@ -99,12 +80,11 @@ def index():
 def predict():
     # lets parse the unseen instance values from the query string
     # they are in the request object
-    dep_time = request.args.get("dep_time") # defaults to None
     sched_dep_time = request.args.get("sched_dep_time")
     sched_arr_time = request.args.get("sched_arr_time")
     air_time = request.args.get("air_time")
     hour = request.args.get("hour")
-    instance = [dep_time, sched_dep_time, sched_arr_time,
+    instance = [sched_dep_time, sched_arr_time,
                 air_time, hour]
     nb_model = load_model()
     # lets make a prediction!
