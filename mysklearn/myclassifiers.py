@@ -453,14 +453,37 @@ class MyDecisionTreeClassifier:
         self.help_print_rules(self.tree, "", attribute_names, class_name)
 
 class MyDecisionTreeRandomForestClassifier:
+    """
+    A simplified decision tree classifier for use in a Random Forest.
+
+    Attributes:
+        max_depth (int or None): Maximum depth of the tree (default: None, unlimited depth).
+        tree (tuple or None): The structure of the trained decision tree.
+    """
     def __init__(self, max_depth=None):
         self.max_depth = max_depth
         self.tree = None
 
     def fit(self, X, y):
+        """
+        Fits the decision tree to the training data.
+
+        Args:
+            X (numpy.ndarray): Feature matrix of shape (n_samples, n_features).
+            y (numpy.ndarray): Target array of shape (n_samples,).
+        """
         self.tree = self._build_tree(X, y)
 
     def predict(self, X):
+        """
+        Predicts the class labels for the given input data.
+
+        Args:
+            X (numpy.ndarray): Feature matrix of shape (n_samples, n_features).
+
+        Returns:
+            list: Predicted class labels for each sample in X.
+        """
         return [self._predict_single(self.tree, x) for x in X]
 
     def _gini(self, y):
@@ -514,13 +537,39 @@ class MyDecisionTreeRandomForestClassifier:
             return self._predict_single(right_subtree, x)
 
 class MyRandomForestClassifier:
+    """
+    A simple implementation of a Random Forest Classifier.
+
+    Attributes:
+        n_estimators (int): Number of decision trees in the forest.
+        max_depth (int or None): Maximum depth of each decision tree.
+        max_features (int or None): Number of features to consider when looking for the best split.
+        trees (list): List to store the fitted decision trees.
+    """
     def __init__(self, n_estimators=10, max_depth=None, max_features=None):
+        """
+        Initializes the Random Forest classifier with the specified hyperparameters.
+
+        Args:
+            n_estimators (int): Number of decision trees in the forest (default: 10).
+            max_depth (int or None): Maximum depth of the decision trees (default: None, unlimited depth).
+            max_features (int or None): Maximum number of features considered for splitting (default: None, use all features).
+        """
         self.n_estimators = n_estimators
         self.max_depth = max_depth
         self.max_features = max_features
         self.trees = []
 
     def fit(self, X, y):
+        """
+        Fits the Random Forest to the training data by training multiple decision trees
+        on bootstrap samples of the dataset.
+
+        Args:
+            X (numpy.ndarray): Feature matrix of shape (n_samples, n_features).
+            y (numpy.ndarray): Target array of shape (n_samples,).
+        """
+
         self.trees = []
         n_samples = X.shape[0]
         for _ in range(self.n_estimators):
@@ -532,9 +581,15 @@ class MyRandomForestClassifier:
             self.trees.append(tree)
 
     def predict(self, X):
+        """
+        Predicts the class labels for the given input data using majority voting across all trees.
+
+        Args:
+            X (numpy.ndarray): Feature matrix of shape (n_samples, n_features).
+
+        Returns:
+            list: Predicted class labels for each sample in X.
+        """
         tree_preds = np.array([tree.predict(X) for tree in self.trees])
         return [Counter(tree_preds[:, i]).most_common(1)[0][0] for i in range(X.shape[0])]
 
-# Main Code
-
-# Convert features and labels to numpy arrays
