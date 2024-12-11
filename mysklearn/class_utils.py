@@ -3,6 +3,7 @@ from tabulate import tabulate
 import pandas as pd
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from mysklearn.myclassifiers import MyKNeighborsClassifier, MyDummyClassifier
 import mysklearn.myevaluation as myevaluation
@@ -535,4 +536,30 @@ def visualize_delays_by_time_of_day(file_path):
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.legend()
     plt.tight_layout()
+    plt.show()
+
+def plot_correlation_matrix(file_path, target_column='dep_delay'):
+    """
+    Plots the correlation matrix of the dataset, including the correlation of each feature with the departure delay.
+    
+    Parameters:
+        file_path (str): The path to the CSV file.
+        target_column (str): The column for which correlation is plotted (default is 'dep_delay').
+    """
+    # Load the dataset
+    flights = pd.read_csv(file_path)
+
+    # Ensure the target column is numeric
+    flights[target_column] = pd.to_numeric(flights[target_column], errors='coerce')
+
+    # Filter only numeric columns
+    numeric_flights = flights.select_dtypes(include=['number'])
+
+    # Calculate the correlation matrix
+    correlation_matrix = numeric_flights.corr()
+
+    # Plot the correlation matrix
+    plt.figure(figsize=(12, 8))
+    sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
+    plt.title(f'Correlation Matrix (with {target_column})')
     plt.show()

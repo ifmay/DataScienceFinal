@@ -55,15 +55,6 @@ def nb_predict(model, X_test):
 
     return y_predicted
 
-'''
-@app.route("/")
-def index():
-    return """
-    <h1>Welcome to the delay predictor app!</h1>
-    <h2><a href="http://127.0.0.1:5001/predict?dep_time=1826&sched_dep_time=1830&sched_arr_time=2105&arr_delay=-12.0&air_time=175.0&hour=18">
-    Click here to predict delay</a></h2>
-    """
-'''
 
 @app.route("/", methods=["GET", "POST"])
 def index():
