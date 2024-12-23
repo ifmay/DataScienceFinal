@@ -21,6 +21,5 @@ can help airlines optimize schedules, enhance passenger experiences, and improve
 ### Organization
   - mysklearn contains all files necessary for creating the classifiers used.
   - graph_utils.py contains helper function to help produce the graphs used.
-  - The input_data folder contains the initial dataset (flights.csv) of 300,000 instances from Kaggle,
-  - along with the final dataset used for classification (balanced_flights.csv).
+  - The input_data folder contains the initial dataset (flights.csv) of 300,000 instances from Kaggle, along with the final dataset used for classification (balanced_flights.csv).
   - The report.ipynb file is the primary file used for predictions and analysis.
