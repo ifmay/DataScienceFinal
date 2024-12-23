@@ -1,7 +1,7 @@
 ## Flight Delay Classification
 
 ### Author
-Drew Fitzpatrick Isabelle May
+Drew Fitzpatrick & Isabelle May
 
 ### Course
 CPSC 322: Data Science Algorithms
